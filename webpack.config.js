@@ -2,7 +2,7 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const ESLintPlugin = require('eslint-webpack-plugin');
-// const copyWebpackPlugin = require('copy-webpack-plugin');
+const copyWebpackPlugin = require('copy-webpack-plugin');
 
 let mode = 'development';
 if (process.env.NODE_ENV === 'production') {
@@ -61,18 +61,18 @@ module.exports = {
     }),
     ...esLintProdCheck(),
 
-    // new copyWebpackPlugin({
-    //   patterns: [
-    //     {
-    //       from: path.resolve(__dirname, 'src/assets/images'),
-    //       to: path.resolve(__dirname, 'dist/assets/images'),
-    //     },
-    //     {
-    //       from: path.resolve(__dirname, 'src/assets/svg'),
-    //       to: path.resolve(__dirname, 'dist/assets/svg'),
-    //     },
-    //   ]
-    // }),
+    new copyWebpackPlugin({
+      patterns: [
+        // {
+        //   from: path.resolve(__dirname, 'src/assets/images'),
+        //   to: path.resolve(__dirname, 'dist/assets/images'),
+        // },
+        {
+          from: path.resolve(__dirname, 'src/assets/svg'),
+          to: path.resolve(__dirname, 'dist/assets/svg'),
+        },
+      ]
+    }),
   ],
 
   module: {

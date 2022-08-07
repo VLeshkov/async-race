@@ -1,1 +1,64 @@
 @import "./vendors/bootstrap.min.css";
+
+.wrapper {
+  margin: 0 20px;
+
+  @media(max-width: 768px) {
+    margin: 0 5px;
+  }
+}
+
+.car {
+  background-color: lightgray;
+  margin: 1em 0;
+  border-bottom: 2px solid gray;
+  display: flex;
+
+  .car__controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+    margin: 0 10px 5px 0;
+
+    @media(max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .car__name {
+    margin-top: 2px;
+    position: absolute;
+    left: 175px;
+
+    @media(max-width: 768px) {
+      margin-top: 6px;
+      left: 85px;
+    }
+  }
+
+  .car__image {
+    align-self: flex-end;
+    height: 40px;
+    width: 80px;
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+
+  .car__flag {
+    margin-bottom: 5px;
+    margin-left: auto;
+    margin-right: 100px;
+    align-self: flex-end;
+    height: 50px;
+    width: 50px;
+    background-image: url('../assets/svg/flag.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+}
+
+.car-form {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}

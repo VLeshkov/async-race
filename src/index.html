@@ -7,6 +7,38 @@
   <title>Async Race</title>
 </head>
 <body>
+  <div class="wrapper">
+    <div>
+      <button type="button" class="btn btn-outline-primary">TO GARAGE</button>
+      <button type="button" class="btn btn-outline-primary">TO WINNERS</button>
+    </div>
+    <div class="car-form">
+      <input type="text" id="add-car-name">
+      <input type="color" id="add-car-color">
+      <button id="btn-add-car" class="btn btn-outline-dark">Add car</button>
+    </div>
+    <div class="car-form">
+      <input type="text" id="update-car-name">
+      <input type="color" id="update-car-color">
+      <button class="btn btn-outline-dark">Update car</button>
+    </div>
+    <div>
+      <button type="button" class="btn btn-outline-primary">RACE</button>
+      <button type="button" class="btn btn-outline-primary">RESET</button>
+      <button type="button" class="btn btn-outline-primary" id="generate-cars">GENERATE CARS</button>
+    </div>
   
+    <div>
+      <h2>Garage</h2>
+      <h3 id="page-counter"></h3>
+
+      <div class="cars-list" id="cars-list"></div>
+  
+      <div>
+        <button class="btn btn-outline-primary" id="btn-prev">Previous</button>
+        <button class="btn btn-outline-primary" id="btn-next">Next</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
