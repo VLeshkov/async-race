@@ -8,6 +8,21 @@
   }
 }
 
+.winner-popup {
+  position: absolute;
+  padding: 10px;
+  text-align: center;
+  background-color: #0D6EFD;
+  color: #FFF;
+  font-size: 2em;
+  width: 350px;
+  left: calc(50% - 175px);
+  top: 50%;
+  cursor: pointer;
+  display: none;
+  z-index: 10;
+}
+
 .car {
   background-color: lightgray;
   margin: 1em 0;

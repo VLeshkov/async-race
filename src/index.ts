@@ -4,6 +4,14 @@ interface Car {
   name: string,
   color: string,
   id?: number,
+  wins?: number,
+  time?: number,
+}
+
+interface Winner {
+  id?: null | number,
+  wins: number,
+  time: null | number,
 }
 
 const carManufacuters = ['Tesla', 'Mercedes', 'BMW', 'Toyota', 'Lada', 'Lexus', 'Porsche', 'Honda', 'Hyundai', 'Ford', 'Volkswagen', 'Mitsubishi', 'Mazda', 'Nissan', 'Audi'];
@@ -13,6 +21,15 @@ const PAGE_LIMIT = 7;
 const GEN_CARS_QTY = 100;
 let currentPage = 1;
 let totalCars = 0;
+let isRace = false;
+
+let carsDisplayed: Car[];
+
+const winner: Winner = {
+  id: null,
+  wins: 1,
+  time: null,
+};
 
 const btnPrev = document.getElementById('btn-prev') as HTMLElement;
 const btnNext = document.getElementById('btn-next') as HTMLElement;
@@ -94,6 +111,54 @@ interface SpeedParams {
   distance: number,
 }
 
+// async function getWinners(page?: number, limit?: number, sort?: ['id' | 'wins' | 'time'], order?: ['ASC' | 'DESC']) {
+//   const url = URL + 'winners';
+//   const response = await fetch(url);
+//   return response.json();
+// }
+
+async function getWinner(id: number) {
+  const url = URL + `winners?id=${id}`;
+  const response = await fetch(url);
+  return response.json();
+}
+
+async function createWinner(winnerObj: Winner) {
+  const url = URL + 'winners';
+  await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(winnerObj),
+  });
+}
+
+async function deleteWinner(id: number) {
+  const url = URL + `winners?id=${id}`;
+  await fetch(url, {
+    method: 'DELETE',
+  });
+}
+
+async function updateWinner(id: number, winnerObj: Winner) {
+  const url = URL + `winners/${id}`;
+  await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(winnerObj),
+  });
+}
+
+function showWinnerPopup(carName: string, carTime: number) {
+  const popup = document.querySelector('.winner-popup') as HTMLElement;
+  popup.textContent = `The winner is ${carName}, time ${carTime}s!`;
+  popup.style.display = 'block';
+
+  setTimeout(() => {
+    popup.textContent = '';
+    popup.style.display = 'none';
+  }, 3000);
+}
+
 function animateCar(car: HTMLElement, params: SpeedParams, trackLength: number) {
   const carSpeed = trackLength / ( params.distance / params.velocity ) * 10;
 
@@ -103,6 +168,44 @@ function animateCar(car: HTMLElement, params: SpeedParams, trackLength: number) 
 
     if (currentPosition < trackLength && car.dataset.status === 'drive') {
       window.requestAnimationFrame(moveCar);
+    } else if (currentPosition >= trackLength && isRace === true) {
+      if (!winner.id && !winner.time) {
+
+        isRace = false;     
+        winner.id = (car.dataset.id) ? +car.dataset.id : 0;
+        const winnerName = carsDisplayed[winner.id].name;
+
+        winner.time = +(( params.distance / params.velocity ) / 1000).toFixed(1);
+
+        showWinnerPopup(winnerName, winner.time);
+
+        getWinner(winner.id).
+          then((res) => { 
+            if (res.length) {
+              const carId = (car.dataset.id) ? +car.dataset.id : 0;
+              const newTime = +(( params.distance / params.velocity ) / 1000).toFixed(1);
+              const oldTime = res[0].time;
+
+              const newData = {
+                wins: res[0].wins += 1,
+                time: (newTime < oldTime) ? newTime : oldTime,
+              };
+
+              updateWinner(carId, newData);
+
+            } else {
+              createWinner({
+                id: winner.id,
+                wins: 1,
+                time: winner.time,
+              });
+            }
+          }).
+          then(() => {
+            winner.id = null;
+            winner.time = null;
+          });
+      }
     }
   }
 
@@ -116,14 +219,42 @@ function getTrackLength(): number {
   return screenWidth - margin * 2 - 115 - controlsWidth - 5;
 }
 
+function toggleDisableBtns(buttons: HTMLElement[]) {
+  buttons.forEach((button) => {
+    button.classList.toggle('disabled');
+  });
+}
+
 async function renderCars(cars: Array<Car>) {
+  carsDisplayed = [];
   const pageCounter = document.getElementById('page-counter') as HTMLElement;
   pageCounter.innerHTML = `Page #${currentPage}/${Math.ceil(totalCars / PAGE_LIMIT)}. Total cars: ${totalCars}`;
 
   const carsList = document.getElementById('cars-list') as HTMLElement;
   carsList.innerHTML = '';
 
+
   cars.forEach((car) => {
+    let wins = 0;
+    let time = 0;
+
+    if (car.id) getWinner(car.id).then((res) => {
+      wins = (res[0]) ? res[0].wins : 0;
+      time = (res[0]) ? res[0].time : 0;
+
+
+    });
+
+    if (car.id) {
+      carsDisplayed[car.id] = {
+        id: car.id,
+        name: car.name,
+        color: car.color,
+        wins: wins,
+        time: time,
+      };
+    }
+
     const createdCar = document.createElement('div');
     createdCar.classList.add('car');
     createdCar.id = `car-${car.id}`;
@@ -136,7 +267,7 @@ async function renderCars(cars: Array<Car>) {
         <button class="btn-stop btn btn-outline-dark btn-sm disabled" data-id="${car.id}">Stop</button>
       </div>
       <h4 class="car__name">${car.name}</h4>
-      <div class="car__image" data-status="drive">
+      <div class="car__image" data-status="drive" data-id="${car.id}">
         <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
         width="80" height="40" viewBox="0 0 1280.000000 640.000000"
         preserveAspectRatio="xMidYMid meet">
@@ -233,11 +364,7 @@ async function renderCars(cars: Array<Car>) {
       <div class="car__flag"></div>
     `;
 
-    function toggleDisableBtns(buttons: HTMLElement[]) {
-      buttons.forEach((button) => {
-        button.classList.toggle('disabled');
-      });
-    }
+
 
     const btnDelete = createdCar.querySelector('.btn-delete') as HTMLElement;
     btnDelete.addEventListener('click', () => {
@@ -303,6 +430,55 @@ async function renderPage() {
     (btnPrev as HTMLSelectElement).disabled = (currentPage === 1) ? true : false;
     (btnNext as HTMLSelectElement).disabled = (currentPage === Math.ceil(totalCars / PAGE_LIMIT)) ? true : false;
 
+    const btnRace = document.getElementById('btn-race') as HTMLElement;
+    const btnReset = document.getElementById('btn-reset') as HTMLElement;
+    const cars = document.querySelectorAll('.car');
+
+    btnReset.classList.add('disabled');
+
+    btnRace.addEventListener('click', () => {
+      toggleDisableBtns([btnRace, btnReset]);
+      isRace = true;
+      cars.forEach((car) => {
+        const carId = +car.id.split('-')[1];
+        const btnStart = car.querySelector('.btn-start') as HTMLElement;
+        const btnStop = car.querySelector('.btn-stop') as HTMLElement;
+        const carImage = car.querySelector('.car__image') as HTMLElement;
+
+        startStopEngine(carId, 'started').
+          then((res) => {
+            const trackLength = getTrackLength();
+            toggleDisableBtns([btnStart, btnStop]);
+            carImage.dataset.status = 'drive';
+            animateCar(carImage, res, trackLength);
+            checkEngine(carId).
+              then((checkResponse) => {
+                if (checkResponse.status === 500) {
+                  carImage.dataset.status = 'broken';
+                  console.log(`Car #${carId} has been stopped suddenly. It's engine was broken down.`);
+                }
+              });
+          });
+      });
+    });
+
+    btnReset.addEventListener('click', () => {
+      toggleDisableBtns([btnRace, btnReset]);
+      isRace = false;
+      cars.forEach((car) => {
+        const carId = +car.id.split('-')[1];
+        const btnStart = car.querySelector('.btn-start') as HTMLElement;
+        const btnStop = car.querySelector('.btn-stop') as HTMLElement;
+        const carImage = car.querySelector('.car__image') as HTMLElement;
+
+        startStopEngine(carId, 'stopped').
+          then(() => {
+            carImage.style.transform = 'translateX(0px)';
+            toggleDisableBtns([btnStart, btnStop]);
+            carImage.dataset.status = 'stop';
+          });
+      });
+    });
   });
 }
 
