@@ -73,6 +73,49 @@ async function getTotalCarsNumber() {
   return response.length;
 }
 
+async function startStopEngine(id: number, status: string) {
+  const url = URL + `engine?id=${id}&status=${status}`;
+  const response = await fetch(url, {
+    method: 'PATCH',
+  });
+  return response.json();
+}
+
+async function checkEngine(id: number) {
+  const url = URL + `engine?id=${id}&status=drive`;
+  const response = await fetch(url, {
+    method: 'PATCH',
+  });
+  return response;
+}
+
+interface SpeedParams {
+  velocity: number,
+  distance: number,
+}
+
+function animateCar(car: HTMLElement, params: SpeedParams, trackLength: number) {
+  const carSpeed = trackLength / ( params.distance / params.velocity ) * 10;
+
+  function moveCar() {
+    const currentPosition = parseFloat(car.style.transform.split('(')[1]);
+    car.style.transform = `translateX(${currentPosition + carSpeed}px)`;
+
+    if (currentPosition < trackLength && car.dataset.status === 'drive') {
+      window.requestAnimationFrame(moveCar);
+    }
+  }
+
+  window.requestAnimationFrame(moveCar);
+}
+
+function getTrackLength(): number {
+  const screenWidth = window.innerWidth;
+  const margin = (screenWidth > 768) ? 20 : 5;
+  const controlsWidth = (screenWidth > 768) ? 150 : 70;
+  return screenWidth - margin * 2 - 115 - controlsWidth - 5;
+}
+
 async function renderCars(cars: Array<Car>) {
   const pageCounter = document.getElementById('page-counter') as HTMLElement;
   pageCounter.innerHTML = `Page #${currentPage}/${Math.ceil(totalCars / PAGE_LIMIT)}. Total cars: ${totalCars}`;
@@ -83,17 +126,17 @@ async function renderCars(cars: Array<Car>) {
   cars.forEach((car) => {
     const createdCar = document.createElement('div');
     createdCar.classList.add('car');
-    createdCar.id = `ar-${car.id}`;
+    createdCar.id = `car-${car.id}`;
 
     createdCar.innerHTML += `
       <div class="car__controls">
-        <button class="btn btn-outline-dark btn-sm">Select</button>
+        <button class="btn-select btn btn-outline-dark btn-sm" data-id="${car.id}">Select</button>
         <button class="btn-delete btn btn-outline-dark btn-sm" data-id="${car.id}">Remove</button>
-        <button class="btn btn-outline-dark btn-sm">Start</button>
-        <button class="btn btn-outline-dark btn-sm">Stop</button>
+        <button class="btn-start btn btn-outline-dark btn-sm" data-id="${car.id}">Start</button>
+        <button class="btn-stop btn btn-outline-dark btn-sm disabled" data-id="${car.id}">Stop</button>
       </div>
       <h4 class="car__name">${car.name}</h4>
-      <div class="car__image">
+      <div class="car__image" data-status="drive">
         <svg version="1.0" xmlns="http://www.w3.org/2000/svg"
         width="80" height="40" viewBox="0 0 1280.000000 640.000000"
         preserveAspectRatio="xMidYMid meet">
@@ -190,6 +233,12 @@ async function renderCars(cars: Array<Car>) {
       <div class="car__flag"></div>
     `;
 
+    function toggleDisableBtns(buttons: HTMLElement[]) {
+      buttons.forEach((button) => {
+        button.classList.toggle('disabled');
+      });
+    }
+
     const btnDelete = createdCar.querySelector('.btn-delete') as HTMLElement;
     btnDelete.addEventListener('click', () => {
       const carId = btnDelete.dataset.id;
@@ -198,7 +247,7 @@ async function renderCars(cars: Array<Car>) {
         deleteCar(+carId).then(() => {
           totalCars -= 1;
 
-          // renderPage()
+          // === renderPage()
           getCars(currentPage, PAGE_LIMIT).then((carsShowed) => {
             renderCars(carsShowed);
           
@@ -208,6 +257,39 @@ async function renderCars(cars: Array<Car>) {
           });
         });
       }
+    });
+
+    const btnStart = createdCar.querySelector('.btn-start') as HTMLElement;
+    const btnStop = createdCar.querySelector('.btn-stop') as HTMLElement;
+    const carImage = createdCar.querySelector('.car__image') as HTMLElement;
+    carImage.style.transform = 'translateX(0px)';
+
+    btnStart.addEventListener('click', () => {
+      const currentId = (btnStart.dataset.id) ? +btnStart.dataset.id : 1;
+      startStopEngine(currentId, 'started').
+        then((res) => {
+          const trackLength = getTrackLength();
+          toggleDisableBtns([btnStart, btnStop]);
+          carImage.dataset.status = 'drive';
+          animateCar(carImage, res, trackLength);
+          checkEngine(currentId).
+            then((checkResponse) => {
+              if (checkResponse.status === 500) {
+                carImage.dataset.status = 'broken';
+                console.log(`Car #${currentId} has been stopped suddenly. It's engine was broken down.`);
+              }
+            });
+        });
+    });
+
+    btnStop.addEventListener('click', () => {
+      const currentId = (btnStart.dataset.id) ? +btnStart.dataset.id : 1;
+      startStopEngine(currentId, 'stopped').
+        then(() => {
+          carImage.style.transform = 'translateX(0px)';
+          toggleDisableBtns([btnStart, btnStop]);
+          carImage.dataset.status = 'stop';
+        });
     });
 
     carsList.appendChild(createdCar);
