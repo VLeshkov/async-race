@@ -1,22 +1,9 @@
 import './styles/main.scss';
+import { Car, Winner, SpeedParams } from './interfaces'; 
+import { getCars, writeCar, deleteCar, getTotalCarsNumber, startStopEngine, checkEngine, getWinner, createWinner, updateWinner } from './api';
 
-interface Car {
-  name: string,
-  color: string,
-  id?: number,
-  wins?: number,
-  time?: number,
-}
-
-interface Winner {
-  id?: null | number,
-  wins: number,
-  time: null | number,
-}
-
-const carManufacuters = ['Tesla', 'Mercedes', 'BMW', 'Toyota', 'Lada', 'Lexus', 'Porsche', 'Honda', 'Hyundai', 'Ford', 'Volkswagen', 'Mitsubishi', 'Mazda', 'Nissan', 'Audi'];
+const carManufacturers = ['Tesla', 'Mercedes', 'BMW', 'Toyota', 'Lada', 'Lexus', 'Porsche', 'Honda', 'Hyundai', 'Ford', 'Volkswagen', 'Mitsubishi', 'Mazda', 'Nissan', 'Audi'];
 const carModels = ['Largus', 'Niva', 'XRay', 'Granta', 'Vesta', 'Oka', '2114', '2110', '2101', '2106', '2107', '2109'];
-const URL = 'http://127.0.0.1:3000/';
 const PAGE_LIMIT = 7;
 const GEN_CARS_QTY = 100;
 let currentPage = 1;
@@ -56,96 +43,6 @@ function generateCar(manufacturers: string[], models: string[]): Car {
     name: `${manufacturers[manufIndex]} ${models[modelIndex]}`,
     color: getColor(),
   };
-}
-
-async function getCars(page?: number, limit?: number) {
-  const url = (page) ? URL + `garage?_page=${page}&_limit=${limit}` : URL + 'garage';
-  const response = await fetch(url);
-
-  const cars = await response.json();
-
-  return cars;
-}
-
-async function writeCar(data: Car) {
-  const url = URL + 'garage';
-
-  await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-}
-
-async function deleteCar(id: number) {
-  const url = URL + 'garage/' + id;
-
-  await fetch(url, {
-    method: 'DELETE',
-  });
-}
-
-async function getTotalCarsNumber() {
-  const response = await getCars();
-  return response.length;
-}
-
-async function startStopEngine(id: number, status: string) {
-  const url = URL + `engine?id=${id}&status=${status}`;
-  const response = await fetch(url, {
-    method: 'PATCH',
-  });
-  return response.json();
-}
-
-async function checkEngine(id: number) {
-  const url = URL + `engine?id=${id}&status=drive`;
-  const response = await fetch(url, {
-    method: 'PATCH',
-  });
-  return response;
-}
-
-interface SpeedParams {
-  velocity: number,
-  distance: number,
-}
-
-// async function getWinners(page?: number, limit?: number, sort?: ['id' | 'wins' | 'time'], order?: ['ASC' | 'DESC']) {
-//   const url = URL + 'winners';
-//   const response = await fetch(url);
-//   return response.json();
-// }
-
-async function getWinner(id: number) {
-  const url = URL + `winners?id=${id}`;
-  const response = await fetch(url);
-  return response.json();
-}
-
-async function createWinner(winnerObj: Winner) {
-  const url = URL + 'winners';
-  await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(winnerObj),
-  });
-}
-
-async function deleteWinner(id: number) {
-  const url = URL + `winners?id=${id}`;
-  await fetch(url, {
-    method: 'DELETE',
-  });
-}
-
-async function updateWinner(id: number, winnerObj: Winner) {
-  const url = URL + `winners/${id}`;
-  await fetch(url, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(winnerObj),
-  });
 }
 
 function showWinnerPopup(carName: string, carTime: number) {
@@ -241,8 +138,6 @@ async function renderCars(cars: Array<Car>) {
     if (car.id) getWinner(car.id).then((res) => {
       wins = (res[0]) ? res[0].wins : 0;
       time = (res[0]) ? res[0].time : 0;
-
-
     });
 
     if (car.id) {
@@ -485,7 +380,7 @@ async function renderPage() {
 const btnGenerate = document.getElementById('generate-cars') as HTMLElement;
 btnGenerate.addEventListener('click', () => {
   for (let i = 0; i < GEN_CARS_QTY; i += 1) {
-    const generatedCar = generateCar(carManufacuters, carModels);
+    const generatedCar = generateCar(carManufacturers, carModels);
     writeCar(generatedCar);
   }
   renderPage();
