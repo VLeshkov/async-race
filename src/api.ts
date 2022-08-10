@@ -11,6 +11,12 @@ async function getCars(page?: number, limit?: number) {
   return cars;
 }
 
+async function getCar(id: number) {
+  const url = URL + `winners?id=${id}`;
+  const response = await fetch(url);
+  return response.json();
+}
+
 async function writeCar(data: Car) {
   const url = URL + 'garage';
 
@@ -50,11 +56,24 @@ async function checkEngine(id: number) {
   return response;
 }
 
-// async function getWinners(page?: number, limit?: number, sort?: ['id' | 'wins' | 'time'], order?: ['ASC' | 'DESC']) {
-//   const url = URL + 'winners';
-//   const response = await fetch(url);
-//   return response.json();
-// }
+async function getWinners(page?: number, limit?: number, sort?: 'id' | 'wins' | 'time', order?: 'ASC' | 'DESC') {
+  
+  const queryParams: string[] = [];
+  if (page) queryParams.push(`page=${page}`);
+  if (limit) queryParams.push(`limit=${limit}`);
+  if (sort) queryParams.push(`sort=${sort}`);
+  if (order) queryParams.push(`order=${order}`);
+
+  const url = URL + 'winners' + (queryParams.length) ? `?${queryParams.join('&')}` : '';
+
+  const response = await fetch(url);
+  return response.json();
+}
+
+async function getTotalWinnersNumber() {
+  const response = await getWinners();
+  return response.length;
+}
 
 async function getWinner(id: number) {
   const url = URL + `winners?id=${id}`;
@@ -87,4 +106,4 @@ async function updateWinner(id: number, winnerObj: Winner) {
   });
 }
 
-export { getCars, writeCar, deleteCar, getTotalCarsNumber, startStopEngine, checkEngine, getWinner, createWinner, deleteWinner, updateWinner };
+export { getCars, getCar, writeCar, deleteCar, getTotalCarsNumber, startStopEngine, checkEngine, getWinner, getWinners, getTotalWinnersNumber, createWinner, deleteWinner, updateWinner };

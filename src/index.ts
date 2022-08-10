@@ -1,6 +1,7 @@
 import './styles/main.scss';
 import { Car, Winner, SpeedParams } from './interfaces'; 
-import { getCars, writeCar, deleteCar, getTotalCarsNumber, startStopEngine, checkEngine, getWinner, createWinner, updateWinner } from './api';
+import { getCars, writeCar, deleteCar, getTotalCarsNumber, startStopEngine, checkEngine, getWinner, getTotalWinnersNumber, createWinner, updateWinner } from './api';
+import { buildPage, renderGarageLayout, renderWinnersLayout } from './view';
 
 const carManufacturers = ['Tesla', 'Mercedes', 'BMW', 'Toyota', 'Lada', 'Lexus', 'Porsche', 'Honda', 'Hyundai', 'Ford', 'Volkswagen', 'Mitsubishi', 'Mazda', 'Nissan', 'Audi'];
 const carModels = ['Largus', 'Niva', 'XRay', 'Granta', 'Vesta', 'Oka', '2114', '2110', '2101', '2106', '2107', '2109'];
@@ -17,12 +18,6 @@ const winner: Winner = {
   wins: 1,
   time: null,
 };
-
-const btnPrev = document.getElementById('btn-prev') as HTMLElement;
-const btnNext = document.getElementById('btn-next') as HTMLElement;
-const btnAddCar = document.getElementById('btn-add-car') as HTMLElement;
-const addCarName = document.getElementById('add-car-name') as HTMLInputElement;
-const addCarColor = document.getElementById('add-car-color') as HTMLInputElement;
 
 function getColor(): string {
   const numbers = '0123456789ABCDEF';
@@ -129,7 +124,6 @@ async function renderCars(cars: Array<Car>) {
 
   const carsList = document.getElementById('cars-list') as HTMLElement;
   carsList.innerHTML = '';
-
 
   cars.forEach((car) => {
     let wins = 0;
@@ -259,8 +253,6 @@ async function renderCars(cars: Array<Car>) {
       <div class="car__flag"></div>
     `;
 
-
-
     const btnDelete = createdCar.querySelector('.btn-delete') as HTMLElement;
     btnDelete.addEventListener('click', () => {
       const carId = btnDelete.dataset.id;
@@ -269,12 +261,12 @@ async function renderCars(cars: Array<Car>) {
         deleteCar(+carId).then(() => {
           totalCars -= 1;
 
-          // === renderPage()
+          // === renderGarage()
           getCars(currentPage, PAGE_LIMIT).then((carsShowed) => {
             renderCars(carsShowed);
           
-            (btnPrev as HTMLSelectElement).disabled = (currentPage === 1) ? true : false;
-            (btnNext as HTMLSelectElement).disabled = (currentPage === Math.ceil(totalCars / PAGE_LIMIT)) ? true : false;
+            // (btnPrev as HTMLSelectElement).disabled = (currentPage === 1) ? true : false;
+            // (btnNext as HTMLSelectElement).disabled = (currentPage === Math.ceil(totalCars / PAGE_LIMIT)) ? true : false;
         
           });
         });
@@ -318,7 +310,17 @@ async function renderCars(cars: Array<Car>) {
   });
 }
 
-async function renderPage() {
+function renderGarage() {
+  const mainContainer = document.getElementById('main-container') as HTMLElement;
+  mainContainer.innerHTML = '';
+  renderGarageLayout(mainContainer);
+
+  const btnPrev = document.getElementById('btn-prev') as HTMLElement;
+  const btnNext = document.getElementById('btn-next') as HTMLElement;
+  const btnAddCar = document.getElementById('btn-add-car') as HTMLElement;
+  const addCarName = document.getElementById('add-car-name') as HTMLInputElement;
+  const addCarColor = document.getElementById('add-car-color') as HTMLInputElement;
+
   getCars(currentPage, PAGE_LIMIT).then((carsShowed) => {
     renderCars(carsShowed);
   
@@ -374,41 +376,72 @@ async function renderPage() {
           });
       });
     });
+
+    const btnGenerate = document.getElementById('generate-cars') as HTMLElement;
+    btnGenerate.addEventListener('click', () => {
+      for (let i = 0; i < GEN_CARS_QTY; i += 1) {
+        const generatedCar = generateCar(carManufacturers, carModels);
+        writeCar(generatedCar);
+      }
+      renderGarage();
+      totalCars += GEN_CARS_QTY;
+    });
+
+    btnNext.addEventListener('click', () => {
+      if (currentPage !== Math.ceil(totalCars / PAGE_LIMIT)) {
+        currentPage += 1;
+        renderGarage();
+      }
+    });
+
+    btnPrev.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage -= 1;
+        renderGarage();
+      }
+    });
+
+    btnAddCar.addEventListener('click', () => {
+      writeCar({ name: addCarName.value, color: addCarColor.value }).then(() => {
+        totalCars += 1;
+        addCarName.value = '';
+        renderGarage();
+      });
+    });
   });
 }
 
-const btnGenerate = document.getElementById('generate-cars') as HTMLElement;
-btnGenerate.addEventListener('click', () => {
-  for (let i = 0; i < GEN_CARS_QTY; i += 1) {
-    const generatedCar = generateCar(carManufacturers, carModels);
-    writeCar(generatedCar);
-  }
-  renderPage();
-  totalCars += GEN_CARS_QTY;
-});
+// TODO
+function renderWinners() {
+  const mainContainer = document.getElementById('main-container') as HTMLElement;
+  mainContainer.innerHTML = '';
+  renderWinnersLayout(mainContainer);
 
-btnNext.addEventListener('click', () => {
-  if (currentPage !== Math.ceil(totalCars / PAGE_LIMIT)) {
-    currentPage += 1;
-    renderPage();
-  }
-});
+  const winnersHeader = document.getElementById('winners-header') as HTMLElement;
 
-btnPrev.addEventListener('click', () => {
-  if (currentPage > 1) {
-    currentPage -= 1;
-    renderPage();
-  }
-});
-
-btnAddCar.addEventListener('click', () => {
-  writeCar({ name: addCarName.value, color: addCarColor.value }).then(() => {
-    totalCars += 1;
-    addCarName.value = '';
-    renderPage();
+  getTotalWinnersNumber().then((winnersNumber) => {
+    winnersHeader.innerText = `
+    Winners (${winnersNumber})
+    `;
   });
+}
+
+buildPage();
+
+const btnGarage = document.getElementById('btn-garage') as HTMLElement;
+btnGarage.classList.add('disabled');
+
+const btnWinners = document.getElementById('btn-winners') as HTMLElement;
+
+btnGarage.addEventListener('click', () => {
+  renderGarage();
+  toggleDisableBtns([btnGarage, btnWinners]);
 });
 
+btnWinners.addEventListener('click', () => {
+  renderWinners();
+  toggleDisableBtns([btnGarage, btnWinners]);
+});
 
 getTotalCarsNumber().then((total) => { totalCars = total; }).
-  then(() => renderPage());
+  then(() => renderGarage());

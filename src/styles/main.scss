@@ -78,3 +78,22 @@
   align-items: center;
   gap: 5px;
 }
+
+.winners-table {
+  margin-bottom: 20px;
+
+  th {
+    background-color: gray;
+    color: #FFF;
+    padding: 10px 20px;
+  }
+
+  th:not(:last-child) {
+    border-right: 1px solid #FFF;
+    padding-right: 20px;
+  }
+
+  td {
+    text-align: center;
+  }
+}
